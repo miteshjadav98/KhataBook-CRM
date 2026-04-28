@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Shop {
+  id                    String   @id @default(uuid())
+  name                  String
+  interestRate          Float    @default(0) // Example: 2 for 2%
+  defaultCreditDuration Int      @default(30) // in days
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  users        User[]
+  customers    Customer[]
+  products     Product[]
+  transactions Transaction[]
+}
+
+enum Role {
+  ADMIN
+  STAFF
+}
+
+model User {
+  id           String   @id @default(uuid())
+  shopId       String
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(STAFF)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+}
+
+model Customer {
+  id           String   @id @default(uuid())
+  shopId       String
+  name         String
+  phone        String
+  passwordHash String
+  totalBalance Float    @default(0) // Positive = Shop owes customer, Negative = Customer owes shop
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  shop         Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@unique([shopId, phone]) // Phone is unique within a shop
+}
+
+model Product {
+  id        String   @id @default(uuid())
+  shopId    String
+  name      String
+  price     Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  shop         Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+}
+
+enum TxType {
+  DEBIT // Customer paid shop (reduces credit)
+  CREDIT // Customer took goods on credit (increases debt)
+}
+
+model Transaction {
+  id              String    @id @default(uuid())
+  shopId          String
+  customerId      String
+  productId       String?
+  amount          Float
+  type            TxType
+  purchaseDate    DateTime  @default(now())
+  dueDate         DateTime?
+  interestApplied Float     @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  shop     Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  product  Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([shopId, customerId, purchaseDate(sort: Desc)])
+}
