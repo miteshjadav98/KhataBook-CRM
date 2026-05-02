@@ -43,7 +43,7 @@ export default function Navbar() {
             </>
           )}
           {user?.type === "CUSTOMER" && (
-            <Link href="/customers" className="nav-link">My Khata</Link>
+            <Link href="/my-khata" className="nav-link">My Khata</Link>
           )}
           
           {!user ? (

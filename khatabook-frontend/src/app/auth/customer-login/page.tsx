@@ -28,7 +28,7 @@ export default function CustomerLoginPage() {
       if (res.data.customer.isTemporaryPassword) {
         router.push("/auth/change-password");
       } else {
-        router.push("/customers");
+        router.push("/my-khata");
       }
     } catch (err: any) {
       setError(err.message);

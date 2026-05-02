@@ -42,7 +42,7 @@ export default function ChangePasswordPage() {
       }
 
       alert("Password changed successfully! ✅");
-      router.push("/customers");
+      router.push("/my-khata");
     } catch (err: any) {
       setError(err.message);
     } finally {
