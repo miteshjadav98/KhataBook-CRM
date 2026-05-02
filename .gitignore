@@ -1,23 +1,6 @@
-# Dependencies
-node_modules
-
-# Build output
-dist
-
-# Environment variables
+node_modules/
 .env
-.env.*
-
-# Prisma
-/generated/prisma
-
-# IDE
-.idea
-.vscode
-
-# OS
-Thumbs.db
+.env.local
 .DS_Store
-
-# Coverage
-coverage
+dist/
+.next/
