@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 
@@ -30,14 +30,14 @@ export class ProductService {
   }
 
   /**
-   * Get all products for a shop.
+   * Get all products for a shop (excluding soft-deleted).
    */
   async getProducts(shopId: string) {
     console.log('[ProductService.getProducts] Called for shopId:', shopId);
 
     try {
       const products = await this.prisma.product.findMany({
-        where: { shopId },
+        where: { shopId, isDeleted: false },
         orderBy: { name: 'asc' },
       });
 
@@ -50,6 +50,23 @@ export class ProductService {
   }
 
   /**
+   * Get a single product by ID.
+   */
+  async getProductById(shopId: string, productId: string) {
+    console.log('[ProductService.getProductById] Called for productId:', productId);
+
+    const product = await this.prisma.product.findFirst({
+      where: { id: productId, shopId, isDeleted: false },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found in your shop');
+    }
+
+    return product;
+  }
+
+  /**
    * Update a product.
    */
   async updateProduct(shopId: string, productId: string, data: Partial<CreateProductDto>) {
@@ -57,7 +74,7 @@ export class ProductService {
 
     try {
       const product = await this.prisma.product.findFirst({
-        where: { id: productId, shopId },
+        where: { id: productId, shopId, isDeleted: false },
       });
 
       if (!product) {
@@ -79,14 +96,14 @@ export class ProductService {
   }
 
   /**
-   * Delete a product.
+   * Soft delete a product.
    */
   async deleteProduct(shopId: string, productId: string) {
     console.log('[ProductService.deleteProduct] Called for productId:', productId);
 
     try {
       const product = await this.prisma.product.findFirst({
-        where: { id: productId, shopId },
+        where: { id: productId, shopId, isDeleted: false },
       });
 
       if (!product) {
@@ -94,8 +111,12 @@ export class ProductService {
         throw new NotFoundException('Product not found in your shop');
       }
 
-      await this.prisma.product.delete({ where: { id: productId } });
-      console.log('[ProductService.deleteProduct] Product deleted:', productId);
+      await this.prisma.product.update({
+        where: { id: productId },
+        data: { isDeleted: true, deletedAt: new Date() },
+      });
+
+      console.log('[ProductService.deleteProduct] Product soft-deleted:', productId);
       return { message: 'Product deleted successfully' };
     } catch (error) {
       console.error('[ProductService.deleteProduct] ERROR:', error.message || error);

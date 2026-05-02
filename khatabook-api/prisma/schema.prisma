@@ -12,6 +12,7 @@ model Shop {
   name                  String
   interestRate          Float    @default(0) // Example: 2 for 2%
   defaultCreditDuration Int      @default(30) // in days
+  locale                String   @default("hi") // Language preference (hi, gu, en)
   isActive              Boolean  @default(true)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
@@ -41,15 +42,19 @@ model User {
 }
 
 model Customer {
-  id           String   @id @default(uuid())
-  shopId       String
-  name         String
-  phone        String?
-  email        String?
-  passwordHash String
-  totalBalance Float    @default(0) // Positive = Shop owes customer, Negative = Customer owes shop
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                  String    @id @default(uuid())
+  shopId              String
+  name                String
+  phone               String?
+  email               String?
+  passwordHash        String
+  totalBalance        Float     @default(0) // Positive = customer owes shop (Udhar), Negative = shop owes customer (Advance)
+  isTemporaryPassword Boolean   @default(true)
+  passwordUpdatedAt   DateTime?
+  isDeleted           Boolean   @default(false)
+  deletedAt           DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   shop         Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
   transactions Transaction[]
@@ -59,20 +64,28 @@ model Customer {
 }
 
 model Product {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   shopId    String
   name      String
   price     Float
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   shop         Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
   transactions Transaction[]
 }
 
 enum TxType {
-  DEBIT // Customer paid shop (reduces credit)
-  CREDIT // Customer took goods on credit (increases debt)
+  UDHAR // Customer took goods on credit (increases what they owe)
+  JAMA  // Customer made a payment (reduces what they owe)
+}
+
+enum TxStatus {
+  PAID
+  DUE
+  OVERDUE
 }
 
 model Transaction {
@@ -80,11 +93,17 @@ model Transaction {
   shopId          String
   customerId      String
   productId       String?
-  amount          Float
   type            TxType
-  purchaseDate    DateTime  @default(now())
+  totalAmount     Float     // Full bill amount (for UDHAR) or payment amount (for JAMA)
+  paidAmount      Float     @default(0)
+  remainingAmount Float     @default(0)
+  discountAmount  Float     @default(0)
+  interestRate    Float     @default(0) // Monthly interest rate for this transaction
+  interestApplied Float     @default(0) // Accumulated interest so far
+  status          TxStatus  @default(DUE)
+  description     String?   // Optional note like "Toor Dal 2kg"
   dueDate         DateTime?
-  interestApplied Float     @default(0)
+  transactionDate DateTime  @default(now())
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -92,5 +111,6 @@ model Transaction {
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   product  Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
 
-  @@index([shopId, customerId, purchaseDate(sort: Desc)])
+  @@index([shopId, customerId, transactionDate(sort: Desc)])
+  @@index([shopId, status])
 }

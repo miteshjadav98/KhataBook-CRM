@@ -11,3 +11,20 @@ export const CreateCustomerSchema = z.object({
 });
 
 export type CreateCustomerDto = z.infer<typeof CreateCustomerSchema>;
+
+// DTO for updating a customer
+export const UpdateCustomerSchema = z.object({
+  name: z.string().min(2).optional(),
+  phone: z.string().optional(),
+  email: z.string().email().optional(),
+});
+
+export type UpdateCustomerDto = z.infer<typeof UpdateCustomerSchema>;
+
+// DTO for changing password
+export const ChangePasswordSchema = z.object({
+  oldPassword: z.string().min(1, 'Old password is required'),
+  newPassword: z.string().min(6, 'New password must be at least 6 characters'),
+});
+
+export type ChangePasswordDto = z.infer<typeof ChangePasswordSchema>;
