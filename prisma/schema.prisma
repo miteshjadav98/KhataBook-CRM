@@ -8,6 +8,7 @@ datasource db {
 
 model Shop {
   id                    String   @id @default(uuid())
+  shopCode              String   @unique @default(cuid()) // Alphanumeric code for login
   name                  String
   interestRate          Float    @default(0) // Example: 2 for 2%
   defaultCreditDuration Int      @default(30) // in days
@@ -43,7 +44,8 @@ model Customer {
   id           String   @id @default(uuid())
   shopId       String
   name         String
-  phone        String
+  phone        String?
+  email        String?
   passwordHash String
   totalBalance Float    @default(0) // Positive = Shop owes customer, Negative = Customer owes shop
   createdAt    DateTime @default(now())
@@ -53,6 +55,7 @@ model Customer {
   transactions Transaction[]
 
   @@unique([shopId, phone]) // Phone is unique within a shop
+  @@unique([shopId, email]) // Email is unique within a shop
 }
 
 model Product {

@@ -10,58 +10,96 @@ export class ProductService {
    * Admin adds a product to their shop.
    */
   async createProduct(shopId: string, data: CreateProductDto) {
-    const product = await this.prisma.product.create({
-      data: {
-        shopId,
-        name: data.name,
-        price: data.price,
-      },
-    });
+    console.log('[ProductService.createProduct] Called for shopId:', shopId, 'product:', data.name);
 
-    return product;
+    try {
+      const product = await this.prisma.product.create({
+        data: {
+          shopId,
+          name: data.name,
+          price: data.price,
+        },
+      });
+
+      console.log('[ProductService.createProduct] Product created:', product.id, product.name);
+      return product;
+    } catch (error) {
+      console.error('[ProductService.createProduct] ERROR:', error.message || error);
+      throw error;
+    }
   }
 
   /**
    * Get all products for a shop.
    */
   async getProducts(shopId: string) {
-    return this.prisma.product.findMany({
-      where: { shopId },
-      orderBy: { name: 'asc' },
-    });
+    console.log('[ProductService.getProducts] Called for shopId:', shopId);
+
+    try {
+      const products = await this.prisma.product.findMany({
+        where: { shopId },
+        orderBy: { name: 'asc' },
+      });
+
+      console.log('[ProductService.getProducts] Found', products.length, 'products');
+      return products;
+    } catch (error) {
+      console.error('[ProductService.getProducts] ERROR:', error.message || error);
+      throw error;
+    }
   }
 
   /**
    * Update a product.
    */
   async updateProduct(shopId: string, productId: string, data: Partial<CreateProductDto>) {
-    const product = await this.prisma.product.findFirst({
-      where: { id: productId, shopId },
-    });
+    console.log('[ProductService.updateProduct] Called for productId:', productId);
 
-    if (!product) {
-      throw new NotFoundException('Product not found in your shop');
+    try {
+      const product = await this.prisma.product.findFirst({
+        where: { id: productId, shopId },
+      });
+
+      if (!product) {
+        console.log('[ProductService.updateProduct] Product not found:', productId);
+        throw new NotFoundException('Product not found in your shop');
+      }
+
+      const updated = await this.prisma.product.update({
+        where: { id: productId },
+        data,
+      });
+
+      console.log('[ProductService.updateProduct] Product updated:', updated.id);
+      return updated;
+    } catch (error) {
+      console.error('[ProductService.updateProduct] ERROR:', error.message || error);
+      throw error;
     }
-
-    return this.prisma.product.update({
-      where: { id: productId },
-      data,
-    });
   }
 
   /**
    * Delete a product.
    */
   async deleteProduct(shopId: string, productId: string) {
-    const product = await this.prisma.product.findFirst({
-      where: { id: productId, shopId },
-    });
+    console.log('[ProductService.deleteProduct] Called for productId:', productId);
 
-    if (!product) {
-      throw new NotFoundException('Product not found in your shop');
+    try {
+      const product = await this.prisma.product.findFirst({
+        where: { id: productId, shopId },
+      });
+
+      if (!product) {
+        console.log('[ProductService.deleteProduct] Product not found:', productId);
+        throw new NotFoundException('Product not found in your shop');
+      }
+
+      await this.prisma.product.delete({ where: { id: productId } });
+      console.log('[ProductService.deleteProduct] Product deleted:', productId);
+      return { message: 'Product deleted successfully' };
+    } catch (error) {
+      console.error('[ProductService.deleteProduct] ERROR:', error.message || error);
+      throw error;
     }
-
-    await this.prisma.product.delete({ where: { id: productId } });
-    return { message: 'Product deleted successfully' };
   }
 }

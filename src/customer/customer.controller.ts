@@ -27,16 +27,17 @@ export class CustomerController {
   @ApiBody({
     schema: {
       type: 'object',
-      required: ['name', 'phone', 'password'],
+      required: ['name', 'password'],
       properties: {
         name: { type: 'string', example: 'Rahul Sharma' },
         phone: { type: 'string', example: '9876543210' },
+        email: { type: 'string', example: 'rahul@example.com' },
         password: { type: 'string', example: 'cust123', description: 'Password for the customer to log in' },
       },
     },
   })
   @ApiResponse({ status: 201, description: 'Customer created successfully' })
-  @ApiResponse({ status: 409, description: 'Customer with this phone already exists in shop' })
+  @ApiResponse({ status: 409, description: 'Customer with this phone or email already exists in shop' })
   async createCustomer(@Req() req: any, @Body() body: CreateCustomerDto) {
     const validationResult = CreateCustomerSchema.safeParse(body);
     if (!validationResult.success) {
@@ -72,15 +73,15 @@ export class CustomerController {
   // ─── CUSTOMER AUTH ────────────────────────────────────
 
   @Post('login')
-  @ApiOperation({ summary: 'Customer: Login with phone, password, and shopId' })
+  @ApiOperation({ summary: 'Customer: Login with phone/email, password, and shopCode' })
   @ApiBody({
     schema: {
       type: 'object',
-      required: ['phone', 'password', 'shopId'],
+      required: ['identifier', 'password', 'shopCode'],
       properties: {
-        phone: { type: 'string', example: '9876543210' },
+        identifier: { type: 'string', example: '9876543210', description: 'Phone or Email' },
         password: { type: 'string', example: 'cust123' },
-        shopId: { type: 'string', example: 'uuid-of-shop', description: 'The shop ID (given by shopkeeper)' },
+        shopCode: { type: 'string', example: 'MTS-363', description: 'The short shop code' },
       },
     },
   })

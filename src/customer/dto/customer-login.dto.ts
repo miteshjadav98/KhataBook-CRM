@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
 export const CustomerLoginSchema = z.object({
-  phone: z.string().min(10, 'Phone is required'),
+  identifier: z.string().min(1, 'Phone or email is required'),
   password: z.string().min(1, 'Password is required'),
-  shopId: z.string().uuid('Invalid shop ID'),
+  shopCode: z.string().min(1, 'Shop Code is required'),
 });
 
 export type CustomerLoginDto = z.infer<typeof CustomerLoginSchema>;
