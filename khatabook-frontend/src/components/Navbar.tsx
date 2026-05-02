@@ -35,14 +35,22 @@ export default function Navbar() {
         </Link>
         <nav className="nav-links">
           {user?.role === "ADMIN" && (
-            <Link href="/dashboard" className="nav-link">Dashboard</Link>
+            <>
+              <Link href="/dashboard" className="nav-link">Dashboard</Link>
+              <Link href="/customers" className="nav-link">Customers</Link>
+              <Link href="/products" className="nav-link">Products</Link>
+              <Link href="/transactions" className="nav-link">Transactions</Link>
+            </>
           )}
-          {(!user || user?.role === "CUSTOMER") && (
-            <Link href="/customers" className="nav-link">Customer Portal</Link>
+          {user?.type === "CUSTOMER" && (
+            <Link href="/customers" className="nav-link">My Khata</Link>
           )}
           
           {!user ? (
-            <Link href="/auth/login" className="btn-primary login-btn">Login</Link>
+            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+              <Link href="/auth/login" className="btn-primary login-btn">Shop Login</Link>
+              <Link href="/auth/customer-login" className="btn-secondary login-btn">Customer Login</Link>
+            </div>
           ) : (
             <button 
               onClick={() => {
