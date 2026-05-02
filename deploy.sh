@@ -48,7 +48,7 @@ npm run build
 
 echo "Starting backend with PM2 on port 3000..."
 # Ensure PM2 loads the environment variables
-pm2 start dist/main.js --name "crm-backend" --env PORT=3000
+PORT=3000 pm2 start dist/main.js --name "crm-backend"
 
 # 4. Build & Run Frontend (Next.js)
 echo "Setting up CRM Frontend (Next.js)..."
