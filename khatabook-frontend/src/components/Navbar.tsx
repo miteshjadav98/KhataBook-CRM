@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 
 export default function Navbar() {
   const [user, setUser] = useState<any>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -27,29 +28,47 @@ export default function Navbar() {
     return () => clearInterval(interval);
   }, [pathname]);
 
+  // Close menu on route change
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
   return (
     <header className="navbar glass-panel">
       <div className="nav-container">
         <Link href="/" className="logo">
           Khata<span className="text-gradient">Book</span>
         </Link>
-        <nav className="nav-links">
+
+        {/* Hamburger button – visible only on mobile */}
+        <button
+          className={`hamburger${menuOpen ? " hamburger--open" : ""}`}
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label="Toggle navigation menu"
+          aria-expanded={menuOpen}
+        >
+          <span className="hamburger__line" />
+          <span className="hamburger__line" />
+          <span className="hamburger__line" />
+        </button>
+
+        <nav className={`nav-links${menuOpen ? " nav-links--open" : ""}`}>
           {user?.role === "ADMIN" && (
             <>
-              <Link href="/dashboard" className="nav-link">Dashboard</Link>
-              <Link href="/customers" className="nav-link">Customers</Link>
-              <Link href="/products" className="nav-link">Products</Link>
-              <Link href="/transactions" className="nav-link">Transactions</Link>
+              <Link href="/dashboard" className="nav-link" onClick={() => setMenuOpen(false)}>Dashboard</Link>
+              <Link href="/customers" className="nav-link" onClick={() => setMenuOpen(false)}>Customers</Link>
+              <Link href="/products" className="nav-link" onClick={() => setMenuOpen(false)}>Products</Link>
+              <Link href="/transactions" className="nav-link" onClick={() => setMenuOpen(false)}>Transactions</Link>
             </>
           )}
           {user?.type === "CUSTOMER" && (
-            <Link href="/my-khata" className="nav-link">My Khata</Link>
+            <Link href="/my-khata" className="nav-link" onClick={() => setMenuOpen(false)}>My Khata</Link>
           )}
           
           {!user ? (
-            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-              <Link href="/auth/login" className="btn-primary login-btn">Shop Login</Link>
-              <Link href="/auth/customer-login" className="btn-secondary login-btn">Customer Login</Link>
+            <div className="nav-auth-buttons">
+              <Link href="/auth/login" className="btn-primary login-btn" onClick={() => setMenuOpen(false)}>Shop Login</Link>
+              <Link href="/auth/customer-login" className="btn-secondary login-btn" onClick={() => setMenuOpen(false)}>Customer Login</Link>
             </div>
           ) : (
             <button 
@@ -57,6 +76,7 @@ export default function Navbar() {
                 localStorage.removeItem("token");
                 localStorage.removeItem("user");
                 setUser(null);
+                setMenuOpen(false);
                 window.location.href = "/auth/login";
               }}
               className="btn-secondary login-btn"
@@ -66,6 +86,14 @@ export default function Navbar() {
           )}
         </nav>
       </div>
+
+      {/* Overlay for mobile menu */}
+      {menuOpen && (
+        <div
+          className="nav-overlay"
+          onClick={() => setMenuOpen(false)}
+        />
+      )}
     </header>
   );
 }
