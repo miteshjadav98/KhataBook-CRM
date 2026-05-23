@@ -51,6 +51,15 @@ export class ProductController {
     return { status: 'success', data: products };
   }
 
+  @Get(':id')
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Get a single product with inventory history' })
+  @ApiParam({ name: 'id', description: 'Product ID' })
+  async getById(@Req() req: any, @Param('id') id: string) {
+    const result = await this.productService.getProductWithHistory(req.user.shopId, id);
+    return { status: 'success', data: result };
+  }
+
   @Put(':id')
   @Roles('ADMIN')
   @ApiOperation({ summary: 'Update a product' })

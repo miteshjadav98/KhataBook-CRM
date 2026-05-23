@@ -17,10 +17,16 @@ model Shop {
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
-  users        User[]
-  customers    Customer[]
-  products     Product[]
-  transactions Transaction[]
+  users              User[]
+  customers          Customer[]
+  suppliers          Supplier[]
+  products           Product[]
+  purchases          Purchase[]
+  sales              SalesTransaction[]
+  inventoryMovements InventoryMovement[]
+  payments           Payment[]
+  expenses           Expense[]
+  invoiceEditLogs    InvoiceEditLog[]
 }
 
 enum Role {
@@ -30,7 +36,7 @@ enum Role {
 
 model User {
   id           String   @id @default(uuid())
-  shopId       String
+  shopId       String   
   name         String
   email        String   @unique
   passwordHash String
@@ -38,17 +44,20 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shop Shop @relation(fields: [shopId], references: [id])
 }
 
 model Customer {
   id                  String    @id @default(uuid())
-  shopId              String
+  shopId              String    
   name                String
   phone               String?
   email               String?
-  passwordHash        String
-  totalBalance        Float     @default(0) // Positive = customer owes shop (Udhar), Negative = shop owes customer (Advance)
+  passwordHash        String?
+  gstin               String?
+  billingAddress      String?
+  shippingAddress     String?
+  totalReceivable     Float     @default(0) // Customer Due (Amount To Receive)
   isTemporaryPassword Boolean   @default(true)
   passwordUpdatedAt   DateTime?
   isDeleted           Boolean   @default(false)
@@ -56,61 +65,198 @@ model Customer {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
-  shop         Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  transactions Transaction[]
+  shop              Shop               @relation(fields: [shopId], references: [id])
+  salesTransactions SalesTransaction[]
+  payments          Payment[]
 
-  @@unique([shopId, phone]) // Phone is unique within a shop
-  @@unique([shopId, email]) // Email is unique within a shop
+  @@unique([shopId, phone])
+  @@unique([shopId, email])
 }
 
-model Product {
-  id        String    @id @default(uuid())
-  shopId    String
-  name      String
-  price     Float
-  isDeleted Boolean   @default(false)
-  deletedAt DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-
-  shop         Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  transactions Transaction[]
-}
-
-enum TxType {
-  UDHAR // Customer took goods on credit (increases what they owe)
-  JAMA  // Customer made a payment (reduces what they owe)
-}
-
-enum TxStatus {
-  PAID
-  DUE
-  OVERDUE
-}
-
-model Transaction {
+model Supplier {
   id              String    @id @default(uuid())
-  shopId          String
-  customerId      String
-  productId       String?
-  type            TxType
-  totalAmount     Float     // Full bill amount (for UDHAR) or payment amount (for JAMA)
-  paidAmount      Float     @default(0)
-  remainingAmount Float     @default(0)
-  discountAmount  Float     @default(0)
-  interestRate    Float     @default(0) // Monthly interest rate for this transaction
-  interestApplied Float     @default(0) // Accumulated interest so far
-  status          TxStatus  @default(DUE)
-  description     String?   // Optional note like "Toor Dal 2kg"
-  dueDate         DateTime?
-  transactionDate DateTime  @default(now())
+  shopId          String    
+  name            String
+  phone           String?
+  email           String?
+  gstin           String?
+  billingAddress  String?
+  shippingAddress String?
+  totalPayable    Float     @default(0) // Supplier Due (Amount To Pay)
+  isDeleted       Boolean   @default(false)
+  deletedAt       DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  shop     Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  product  Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  shop      Shop       @relation(fields: [shopId], references: [id])
+  purchases Purchase[]
+  payments  Payment[]
 
-  @@index([shopId, customerId, transactionDate(sort: Desc)])
-  @@index([shopId, status])
+  @@unique([shopId, phone])
+  @@unique([shopId, email])
+}
+
+enum ProductUnit {
+  KG
+  G
+  L
+  ML
+  PIECES
+  DOZEN
+  CARTON
+  PACKET
+}
+
+model Product {
+  id                   String      @id @default(uuid())
+  shopId               String      
+  name                 String
+  sku                  String?
+  barcode              String?
+  category             String?
+  stockQty             Float       @default(0)
+  defaultPurchasePrice Float       @default(0)
+  defaultSellingPrice  Float       @default(0)
+  lowStockThreshold    Float       @default(10)
+  unit                 ProductUnit @default(PIECES)
+  isDeleted            Boolean     @default(false)
+  deletedAt            DateTime?
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+
+  shop               Shop                @relation(fields: [shopId], references: [id])
+  inventoryMovements InventoryMovement[]
+}
+
+model Purchase {
+  id            String         @id @default(uuid())
+  shopId        String         
+  supplierId    String         
+  invoiceNumber String?
+  items         Json
+  subtotal      Float
+  paidAmount    Float          @default(0)
+  discount      Float          @default(0)
+  dueAmount     Float          @default(0)
+  paymentMode   PaymentMode    @default(CASH)
+  notes         String?
+  lastEditedAt  DateTime?
+  editCount     Int            @default(0)
+  lastEditReason String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  shop     Shop     @relation(fields: [shopId], references: [id])
+  supplier Supplier @relation(fields: [supplierId], references: [id])
+}
+
+model SalesTransaction {
+  id            String      @id @default(uuid())
+  shopId        String      
+  customerId    String      
+  invoiceNumber String?
+  items         Json
+  subtotal      Float
+  paidAmount    Float       @default(0)
+  discount      Float       @default(0)
+  dueAmount     Float       @default(0)
+  paymentMode   PaymentMode @default(CASH)
+  profit        Float       @default(0)
+  notes         String?
+  lastEditedAt  DateTime?
+  editCount     Int         @default(0)
+  lastEditReason String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  shop     Shop     @relation(fields: [shopId], references: [id])
+  customer Customer @relation(fields: [customerId], references: [id])
+}
+
+enum MovementType {
+  PURCHASE
+  SALE
+  RETURN
+  STOCK_ADJUSTMENT
+}
+
+enum ReferenceType {
+  PURCHASE
+  SALE
+  MANUAL
+}
+
+model InventoryMovement {
+  id            String        @id @default(uuid())
+  shopId        String        
+  productId     String        
+  type          MovementType
+  qty           Float
+  beforeQty     Float
+  afterQty      Float
+  referenceType ReferenceType
+  referenceId   String?       // Can reference Purchase or SalesTransaction ID
+  notes         String?
+  createdAt     DateTime      @default(now())
+
+  shop    Shop    @relation(fields: [shopId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+}
+
+enum PaymentType {
+  CUSTOMER_PAYMENT
+  SUPPLIER_PAYMENT
+}
+
+enum PaymentMode {
+  CASH
+  ONLINE
+  UPI
+  BANK_TRANSFER
+  CHEQUE
+  OTHER
+}
+
+model Payment {
+  id          String      @id @default(uuid())
+  shopId      String      
+  type        PaymentType
+  customerId  String?     
+  supplierId  String?     
+  amount      Float
+  paymentMode PaymentMode
+  notes       String?
+  createdAt   DateTime    @default(now())
+
+  shop     Shop      @relation(fields: [shopId], references: [id])
+  customer Customer? @relation(fields: [customerId], references: [id])
+  supplier Supplier? @relation(fields: [supplierId], references: [id])
+}
+
+model Expense {
+  id          String      @id @default(uuid())
+  shopId      String      
+  amount      Float
+  category    String
+  description String?
+  paymentMode PaymentMode @default(CASH)
+  date        DateTime    @default(now())
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  shop Shop @relation(fields: [shopId], references: [id])
+}
+
+model InvoiceEditLog {
+  id             String   @id @default(uuid())
+  invoiceId      String   
+  invoiceType    String   // "SALE" | "PURCHASE"
+  shopId         String   
+  reason         String
+  changesSummary String
+  beforeSnapshot Json
+  afterSnapshot  Json
+  editedAt       DateTime @default(now())
+
+  shop Shop @relation(fields: [shopId], references: [id])
 }

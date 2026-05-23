@@ -127,19 +127,19 @@ export class CustomerController {
   // ─── CUSTOMER AUTH ────────────────────────────────────
 
   @Post('login')
-  @ApiOperation({ summary: 'Customer: Login with phone/email, password, and shopCode' })
+  @ApiOperation({ summary: 'Customer: Login with phone/email and password. Returns shops list or auto-logs in.' })
   @ApiBody({
     schema: {
       type: 'object',
-      required: ['identifier', 'password', 'shopCode'],
+      required: ['identifier', 'password'],
       properties: {
         identifier: { type: 'string', example: '9876543210', description: 'Phone or Email' },
         password: { type: 'string', example: 'cust123' },
-        shopCode: { type: 'string', example: 'MTS-363', description: 'The short shop code' },
+        shopId: { type: 'string', description: 'Optional: specific shop to login to' },
       },
     },
   })
-  @ApiResponse({ status: 201, description: 'Login successful. Check isTemporaryPassword to force password change.' })
+  @ApiResponse({ status: 201, description: 'Login successful or returns list of shops' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async customerLogin(@Body() body: CustomerLoginDto) {
     const validationResult = CustomerLoginSchema.safeParse(body);
@@ -149,9 +149,17 @@ export class CustomerController {
 
     const result = await this.customerService.customerLogin(validationResult.data);
 
+    // If multiple shops returned
+    if ((result as any).multipleShops) {
+      return {
+        status: 'success',
+        ...result,
+      };
+    }
+
     return {
       status: 'success',
-      message: result.customer.isTemporaryPassword
+      message: (result as any).customer?.isTemporaryPassword
         ? 'Login successful. Please change your temporary password.'
         : 'Login successful',
       data: result,
@@ -205,27 +213,74 @@ export class CustomerController {
     };
   }
 
-  @Get('me/transactions')
+  @Get('me/ledger')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Customer: View my transaction history (Khata)' })
-  @ApiQuery({ name: 'page', required: false, example: 1 })
-  @ApiQuery({ name: 'limit', required: false, example: 10 })
-  @ApiResponse({ status: 200, description: 'Paginated list of customer transactions with interest' })
-  async getMyTransactions(
-    @Req() req: any,
-    @Query('page') page: string,
-    @Query('limit') limit: string,
-  ) {
+  @ApiOperation({ summary: 'Customer: View my ledger (Sales and Payments)' })
+  @ApiResponse({ status: 200, description: 'List of sales and payments' })
+  async getCustomerLedger(@Req() req: any) {
     const customerId = req.user.sub;
-    const pageNumber = parseInt(page) || 1;
-    const limitNumber = parseInt(limit) || 10;
-
-    const result = await this.customerService.getMyTransactions(customerId, pageNumber, limitNumber);
+    const result = await this.customerService.getCustomerLedger(customerId);
 
     return {
       status: 'success',
-      ...result,
+      data: result,
+    };
+  }
+
+  @Get('me/sale/:saleId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Customer: View a specific sale invoice (abstract view)' })
+  @ApiParam({ name: 'saleId', description: 'Sale Transaction ID' })
+  async getCustomerSaleDetail(@Req() req: any, @Param('saleId') saleId: string) {
+    const customerId = req.user.sub;
+    const result = await this.customerService.getCustomerSaleDetail(customerId, saleId);
+
+    return {
+      status: 'success',
+      data: result,
+    };
+  }
+
+  @Get('me/shops')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Customer: View all shops where my account is registered' })
+  @ApiResponse({ status: 200, description: 'List of all shops linked to customer account' })
+  async getMyShops(@Req() req: any) {
+    const identifier = req.user.identifier;
+    const shops = await this.customerService.getMyShops(identifier);
+
+    return {
+      status: 'success',
+      data: shops,
+    };
+  }
+
+  @Post('me/switch-shop')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Customer: Switch to a different shop they are registered with' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['shopId'],
+      properties: {
+        shopId: { type: 'string', description: 'ID of the shop to switch to' },
+      },
+    },
+  })
+  async switchShop(@Req() req: any, @Body() body: { shopId: string }) {
+    if (!body.shopId) {
+      throw new BadRequestException('shopId is required');
+    }
+    const identifier = req.user.identifier;
+    const result = await this.customerService.switchShop(identifier, body.shopId);
+    return {
+      status: 'success',
+      message: 'Switched shop successfully',
+      data: result,
     };
   }
 }

@@ -57,8 +57,10 @@ export default function Navbar() {
             <>
               <Link href="/dashboard" className="nav-link" onClick={() => setMenuOpen(false)}>Dashboard</Link>
               <Link href="/customers" className="nav-link" onClick={() => setMenuOpen(false)}>Customers</Link>
+              <Link href="/suppliers" className="nav-link" onClick={() => setMenuOpen(false)}>Suppliers</Link>
               <Link href="/products" className="nav-link" onClick={() => setMenuOpen(false)}>Products</Link>
-              <Link href="/transactions" className="nav-link" onClick={() => setMenuOpen(false)}>Transactions</Link>
+              <Link href="/sales" className="nav-link" onClick={() => setMenuOpen(false)}>Sales</Link>
+              <Link href="/purchases" className="nav-link" onClick={() => setMenuOpen(false)}>Purchases</Link>
             </>
           )}
           {user?.type === "CUSTOMER" && (

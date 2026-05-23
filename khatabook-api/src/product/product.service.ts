@@ -17,7 +17,14 @@ export class ProductService {
         data: {
           shopId,
           name: data.name,
-          price: data.price,
+          sku: data.sku,
+          barcode: data.barcode,
+          category: data.category,
+          stockQty: data.stockQty ?? 0,
+          defaultPurchasePrice: data.defaultPurchasePrice ?? 0,
+          defaultSellingPrice: data.defaultSellingPrice ?? 0,
+          lowStockThreshold: data.lowStockThreshold ?? 10,
+          unit: data.unit ?? 'PIECES',
         },
       });
 
@@ -50,10 +57,10 @@ export class ProductService {
   }
 
   /**
-   * Get a single product by ID.
+   * Get a single product by ID with inventory movement history.
    */
-  async getProductById(shopId: string, productId: string) {
-    console.log('[ProductService.getProductById] Called for productId:', productId);
+  async getProductWithHistory(shopId: string, productId: string) {
+    console.log('[ProductService.getProductWithHistory] Called for productId:', productId);
 
     const product = await this.prisma.product.findFirst({
       where: { id: productId, shopId, isDeleted: false },
@@ -63,7 +70,24 @@ export class ProductService {
       throw new NotFoundException('Product not found in your shop');
     }
 
-    return product;
+    const movements = await this.prisma.inventoryMovement.findMany({
+      where: { productId, shopId },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+
+    // Calculate margin
+    const margin = product.defaultSellingPrice - product.defaultPurchasePrice;
+    const marginPercent = product.defaultPurchasePrice > 0 
+      ? ((margin / product.defaultPurchasePrice) * 100).toFixed(1) 
+      : '0';
+
+    return {
+      ...product,
+      margin,
+      marginPercent,
+      movements,
+    };
   }
 
   /**
@@ -84,7 +108,17 @@ export class ProductService {
 
       const updated = await this.prisma.product.update({
         where: { id: productId },
-        data,
+        data: {
+          name: data.name,
+          sku: data.sku,
+          barcode: data.barcode,
+          category: data.category,
+          stockQty: data.stockQty,
+          defaultPurchasePrice: data.defaultPurchasePrice,
+          defaultSellingPrice: data.defaultSellingPrice,
+          lowStockThreshold: data.lowStockThreshold,
+          unit: data.unit,
+        },
       });
 
       console.log('[ProductService.updateProduct] Product updated:', updated.id);
