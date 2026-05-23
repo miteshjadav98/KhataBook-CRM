@@ -17,9 +17,17 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}) {
     headers,
   });
 
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
+    if (res.status === 401) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/auth/login';
+      }
+      throw new Error('Session expired. Please login again.');
+    }
     throw new Error(data.message || 'Something went wrong');
   }
 
