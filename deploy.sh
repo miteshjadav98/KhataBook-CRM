@@ -48,7 +48,7 @@ npm run build
 
 echo "Starting backend with PM2 on port 3000..."
 # Ensure PM2 loads the environment variables
-PORT=3000 pm2 start dist/main.js --name "crm-backend"
+pm2 restart crm-backend || PORT=3000 pm2 start dist/main.js --name "crm-backend"
 
 # 4. Build & Run Frontend (Next.js)
 echo "Setting up CRM Frontend (Next.js)..."
@@ -61,7 +61,7 @@ echo "Building frontend..."
 npm run build
 
 echo "Starting frontend with PM2 on port 3001..."
-pm2 start npm --name "crm-frontend" -- start -- -p 3001
+pm2 restart crm-frontend || pm2 start npm --name "crm-frontend" -- start -- -p 3001
 
 # 5. Save PM2 configuration to run on startup
 echo "Configuring PM2 to start on boot..."
