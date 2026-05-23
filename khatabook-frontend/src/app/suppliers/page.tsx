@@ -160,6 +160,10 @@ export default function SuppliersPage() {
                 <input type="tel" className="form-input" value={newSupplier.phone} onChange={(e) => setNewSupplier({ ...newSupplier, phone: e.target.value })} />
               </div>
               <div className="form-group">
+                <label className="form-label">Email</label>
+                <input type="email" className="form-input" value={newSupplier.email} onChange={(e) => setNewSupplier({ ...newSupplier, email: e.target.value })} />
+              </div>
+              <div className="form-group">
                 <label className="form-label">GSTIN</label>
                 <input type="text" className="form-input" value={newSupplier.gstin} onChange={(e) => setNewSupplier({ ...newSupplier, gstin: e.target.value })} />
               </div>
