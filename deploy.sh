@@ -58,6 +58,9 @@ cd "$FRONTEND_DIR"
 echo "Installing frontend dependencies..."
 npm install
 
+echo "Cleaning old Next.js build cache..."
+rm -rf .next
+
 echo "Building frontend..."
 npm run build
 
