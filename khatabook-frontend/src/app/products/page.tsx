@@ -25,7 +25,17 @@ export default function ProductsPage() {
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
-    if (!storedUser || JSON.parse(storedUser).role !== "ADMIN") {
+    if (!storedUser) {
+      router.push("/auth/login");
+      return;
+    }
+    try {
+      const parsed = JSON.parse(storedUser);
+      if (parsed.role !== "ADMIN") {
+        router.push("/auth/login");
+        return;
+      }
+    } catch (e) {
       router.push("/auth/login");
       return;
     }

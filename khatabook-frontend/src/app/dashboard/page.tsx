@@ -28,12 +28,17 @@ export default function DashboardPage() {
       router.push("/auth/login");
       return;
     }
-    const parsed = JSON.parse(storedUser);
-    if (parsed.role !== "ADMIN") {
-      router.push("/");
+    try {
+      const parsed = JSON.parse(storedUser);
+      if (parsed.role !== "ADMIN") {
+        router.push("/auth/login");
+        return;
+      }
+      setUser(parsed);
+    } catch (e) {
+      router.push("/auth/login");
       return;
     }
-    setUser(parsed);
 
     apiFetch("/dashboard")
       .then((res) => setMetrics(res.data))
