@@ -42,7 +42,7 @@ export default function CustomersPage() {
   const loadCustomers = async () => {
     try {
       const res = await apiFetch("/customers");
-      setCustomers(res.data);
+      setCustomers(res.data || []);
     } catch (err: any) {
       console.error(err);
     } finally {

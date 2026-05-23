@@ -33,8 +33,8 @@ export default function NewSalesPage() {
         apiFetch("/customers"),
         apiFetch("/products")
       ]);
-      setCustomers(custRes.data);
-      setProducts(prodRes.data);
+      setCustomers(custRes.data || []);
+      setProducts(prodRes.data || []);
     } catch (err) {
       console.error(err);
       alert("Failed to load data");

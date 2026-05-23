@@ -33,8 +33,8 @@ export default function NewPurchasePage() {
         apiFetch("/supplier"),
         apiFetch("/products")
       ]);
-      setSuppliers(supRes.data);
-      setProducts(prodRes.data);
+      setSuppliers(supRes.data || []);
+      setProducts(prodRes.data || []);
     } catch (err) {
       console.error(err);
       alert("Failed to load data");
