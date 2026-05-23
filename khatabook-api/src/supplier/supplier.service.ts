@@ -29,6 +29,8 @@ export class SupplierService {
       data: {
         shopId,
         ...data,
+        phone: data.phone || null,
+        email: data.email || null,
       },
     });
   }
