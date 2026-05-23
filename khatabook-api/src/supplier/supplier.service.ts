@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSupplierDto } from './dto/create-supplier.dto';
 
@@ -7,6 +7,24 @@ export class SupplierService {
   constructor(private readonly prisma: PrismaService) {}
 
   async createSupplier(shopId: string, data: CreateSupplierDto) {
+    if (data.phone) {
+      const existingPhone = await this.prisma.supplier.findFirst({
+        where: { shopId, phone: data.phone, isDeleted: false },
+      });
+      if (existingPhone) {
+        throw new ConflictException('A supplier with this phone number already exists in your shop');
+      }
+    }
+
+    if (data.email) {
+      const existingEmail = await this.prisma.supplier.findFirst({
+        where: { shopId, email: data.email, isDeleted: false },
+      });
+      if (existingEmail) {
+        throw new ConflictException('A supplier with this email already exists in your shop');
+      }
+    }
+
     return this.prisma.supplier.create({
       data: {
         shopId,
